@@ -31,29 +31,48 @@ class Scanner(private val source: String) {
             '+' -> addToken(PLUS)
             ';' -> addToken(SEMICOLON)
             '*' -> addToken(STAR)
-            '!' -> addToken(if (consumeIfMatch('=')) BANG_EQUAL else BANG)
-            '>' -> addToken(if (consumeIfMatch('=')) GREATER_EQUAL else GREATER)
-            '<' -> addToken(if (consumeIfMatch('=')) LESS_EQUAL else LESS)
-            '=' -> addToken(if (consumeIfMatch('=')) EQUAL_EQUAL else EQUAL)
-            '/' -> if (consumeIfMatch('/')) consumeLine() else addToken(SLASH)
+            '!' -> addToken(if (match('=')) BANG_EQUAL else BANG)
+            '>' -> addToken(if (match('=')) GREATER_EQUAL else GREATER)
+            '<' -> addToken(if (match('=')) LESS_EQUAL else LESS)
+            '=' -> addToken(if (match('=')) EQUAL_EQUAL else EQUAL)
+            '/' -> if (match('/')) {
+                consumeLine()
+            } else if (match('*')) {
+                consumeMultiLineComment()
+            } else {
+                addToken(SLASH)
+            }
             ' ', '\r', '\t' -> {
             }
             '\n' -> line++
-            '"' -> parseString()
+            '"' -> consumeString()
             else ->
                 when {
-                    isDigit(c) -> parseNumber()
-                    isAlpha(c) -> parseIdentifier()
+                    isDigit(c) -> consumeNumber()
+                    isAlpha(c) -> consumeIdentifier()
                     else -> Klox.error(line, "Unexpected character")
                 }
         }
+    }
+
+    private fun consumeMultiLineComment() {
+        while (!isAtEnd() && !isClosingComment()) {
+            val nextChar = advance()
+            if (nextChar == '\n') line++
+        }
+        advance()
+        advance()
+    }
+
+    private fun isClosingComment(): Boolean {
+        return peek() == '*' && peekNext() == '/'
     }
 
     private fun isAlpha(c: Char): Boolean {
         return c in 'a'..'z' || c in 'A'..'Z' || c == '_'
     }
 
-    private fun parseIdentifier() {
+    private fun consumeIdentifier() {
         while (isAlphaNumeric(peek())) advance()
         val text = source.substring(start until current)
         val type = keywords[text] ?: IDENTIFIER
@@ -64,7 +83,7 @@ class Scanner(private val source: String) {
         return isAlpha(c) || isDigit(c)
     }
 
-    private fun parseNumber() {
+    private fun consumeNumber() {
         while (isDigit(peek())) advance()
         if (peek() == '.' && isDigit(peekNext())) {
             // consume the period
@@ -81,7 +100,7 @@ class Scanner(private val source: String) {
         return possibleDigit in '0'..'9'
     }
 
-    private fun parseString() {
+    private fun consumeString() {
         while (peek() != '"' && !isAtEnd()) {
             if (peek() == '\n') line++
             advance()
@@ -146,7 +165,7 @@ class Scanner(private val source: String) {
     /**
      * Consume the current character and progress if it matches the character provided.
      */
-    private fun consumeIfMatch(expected: Char): Boolean {
+    private fun match(expected: Char): Boolean {
         if (isAtEnd()) return false
         if (source[current] != expected) return false
         current++

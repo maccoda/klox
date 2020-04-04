@@ -5,6 +5,7 @@ import java.io.InputStreamReader
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
+import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     when {
@@ -31,9 +32,10 @@ object Klox {
 
 
     fun runFile(path: String) {
-        val bytes = Files.readAllBytes(Paths.get(path))
+        val myPath = ClassLoader.getSystemResource(path).toURI()
+        val bytes = Files.readAllBytes(Paths.get(myPath))
         runOn(String(bytes, Charset.defaultCharset()))
-        if (hadError) System.exit(65)
+        if (hadError) exitProcess(65)
     }
 
     private fun runOn(source: String) {
