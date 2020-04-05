@@ -7,11 +7,12 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import kotlin.system.exitProcess
 
+
 fun main(args: Array<String>) {
     when {
         args.size > 1 -> {
             println("Usage klox [script]")
-            System.exit(64)
+            exitProcess(64)
         }
         args.size == 1 -> Klox.runFile(args[0])
         else -> Klox.runPrompt()
@@ -41,6 +42,7 @@ object Klox {
     private fun runOn(source: String) {
         val scanner = Scanner(source)
         val tokens = scanner.scanTokens()
+        println(tokens)
         val parser = Parser(tokens)
         val expression = parser.parse()
         if (hadError) return

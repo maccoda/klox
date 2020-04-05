@@ -18,9 +18,10 @@ class Parser(private val tokens: List<Token>) {
         return tokens[current - 1]
     }
 
-    private fun isOneOfTheseTokens(vararg tokens: TokenType): Boolean {
+    private fun nextMatches(vararg tokens: TokenType): Boolean {
         for (token in tokens) {
             if (check(token)) {
+                advance()
                 return true
             }
         }
@@ -32,7 +33,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun isAtEnd(): Boolean {
-        return peek().tokenType == TokenType.EOF
+        return peek().tokenType == EOF
     }
 
     private fun consume(tokenType: TokenType, msg: String): Token {
@@ -46,15 +47,15 @@ class Parser(private val tokens: List<Token>) {
     }
 
     //expression     → equality ;
-    fun expression(): Expr {
+    private fun expression(): Expr {
         return equality()
     }
 
     //equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     private fun equality(): Expr {
         var expr = comparison()
-        while (isOneOfTheseTokens(BANG_EQUAL, EQUAL_EQUAL)) {
-            val operator = advance()
+        while (nextMatches(BANG_EQUAL, EQUAL_EQUAL)) {
+            val operator = previous()
             val right = comparison()
             expr = Binary(expr, operator, right)
         }
@@ -65,8 +66,8 @@ class Parser(private val tokens: List<Token>) {
     //comparison     → addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
     private fun comparison(): Expr {
         var expr = addition()
-        while (isOneOfTheseTokens(LESS, LESS_EQUAL, GREATER, GREATER_EQUAL)) {
-            val operator = advance()
+        while (nextMatches(LESS, LESS_EQUAL, GREATER, GREATER_EQUAL)) {
+            val operator = previous()
             val right = addition()
             expr = Binary(expr, operator, right)
         }
@@ -76,8 +77,8 @@ class Parser(private val tokens: List<Token>) {
     //addition       → multiplication ( ( "-" | "+" ) multiplication )* ;
     private fun addition(): Expr {
         var expr = multiplication()
-        while (isOneOfTheseTokens(MINUS, PLUS)) {
-            val operator = advance()
+        while (nextMatches(MINUS, PLUS)) {
+            val operator = previous()
             val right = multiplication()
             expr = Binary(expr, operator, right)
         }
@@ -87,8 +88,8 @@ class Parser(private val tokens: List<Token>) {
     //multiplication → unary ( ( "/" | "*" ) unary )* ;
     private fun multiplication(): Expr {
         var expr = unary()
-        while (isOneOfTheseTokens(STAR, SLASH)) {
-            val operator = advance()
+        while (nextMatches(STAR, SLASH)) {
+            val operator = previous()
             val right = unary()
             expr = Binary(expr, operator, right)
         }
@@ -98,8 +99,8 @@ class Parser(private val tokens: List<Token>) {
     //unary          → ( "!" | "-" ) unary
     //               | primary ;
     private fun unary(): Expr {
-        return if (isOneOfTheseTokens(BANG, MINUS)) {
-            val operator = advance()
+        return if (nextMatches(BANG, MINUS)) {
+            val operator = previous()
             val right = unary()
             Unary(operator, right)
         } else {
@@ -110,27 +111,24 @@ class Parser(private val tokens: List<Token>) {
     //primary        → NUMBER | STRING | "false" | "true" | "nil"
     //               | "(" expression ")" ;
     private fun primary(): Expr {
-        val expr: Expr? =
-            when {
-                isOneOfTheseTokens(FALSE) -> Literal(false)
-                isOneOfTheseTokens(TRUE) -> Literal(true)
-                isOneOfTheseTokens(NIL) -> Literal(null)
-                isOneOfTheseTokens(NUMBER, STRING) -> Literal(peek().literal)
-                isOneOfTheseTokens(LEFT_PAREN) -> {
-                    val expression = expression()
-                    consume(RIGHT_PAREN, "Expect ')' after expression.")
-                    Grouping(expression)
-                }
-                else -> throw error(peek(), "Expected an expression.")
+        return when {
+            nextMatches(FALSE) -> Literal(false)
+            nextMatches(TRUE) -> Literal(true)
+            nextMatches(NIL) -> Literal(null)
+            nextMatches(NUMBER, STRING) -> Literal(previous().literal)
+            nextMatches(LEFT_PAREN) -> {
+                val expression = expression()
+                consume(RIGHT_PAREN, "Expect ')' after expression.")
+                Grouping(expression)
             }
-        advance()
-        return expr!!
+            else -> throw error(peek(), "Expected an expression.")
+        }
     }
 
     private fun synchronize() {
         advance()
         while (!isAtEnd()) {
-            if (previous().tokenType === klox.TokenType.SEMICOLON) return
+            if (previous().tokenType == SEMICOLON) return
 
             when (peek().tokenType) {
                 CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN -> {
