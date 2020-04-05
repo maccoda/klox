@@ -53,44 +53,30 @@ class Parser(private val tokens: List<Token>) {
 
     //equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     private fun equality(): Expr {
-        var expr = comparison()
-        while (nextMatches(BANG_EQUAL, EQUAL_EQUAL)) {
-            val operator = previous()
-            val right = comparison()
-            expr = Binary(expr, operator, right)
-        }
-        return expr
+        return leftAssociativeBinary({ comparison() }, BANG_EQUAL, EQUAL_EQUAL)
     }
 
 
     //comparison     → addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
     private fun comparison(): Expr {
-        var expr = addition()
-        while (nextMatches(LESS, LESS_EQUAL, GREATER, GREATER_EQUAL)) {
-            val operator = previous()
-            val right = addition()
-            expr = Binary(expr, operator, right)
-        }
-        return expr
+        return leftAssociativeBinary({ addition() }, LESS, LESS_EQUAL, GREATER, GREATER_EQUAL)
     }
 
     //addition       → multiplication ( ( "-" | "+" ) multiplication )* ;
     private fun addition(): Expr {
-        var expr = multiplication()
-        while (nextMatches(MINUS, PLUS)) {
-            val operator = previous()
-            val right = multiplication()
-            expr = Binary(expr, operator, right)
-        }
-        return expr
+        return leftAssociativeBinary({ multiplication() }, MINUS, PLUS)
     }
 
     //multiplication → unary ( ( "/" | "*" ) unary )* ;
     private fun multiplication(): Expr {
-        var expr = unary()
-        while (nextMatches(STAR, SLASH)) {
+        return leftAssociativeBinary({ unary() }, STAR, SLASH)
+    }
+
+    private fun leftAssociativeBinary(rightGrammar: () -> Expr, vararg tokens: TokenType): Expr {
+        var expr = rightGrammar()
+        while (nextMatches(*tokens)) {
             val operator = previous()
-            val right = unary()
+            val right = rightGrammar()
             expr = Binary(expr, operator, right)
         }
         return expr
