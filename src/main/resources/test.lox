@@ -13,3 +13,10 @@ while (a < 10) {
 print "hi";
 */
 (2+3)*(4-2);
+
+// Comma operator
+2+2, 1+1;
+
+// Ternary operator
+
+// true ? 1 : 2

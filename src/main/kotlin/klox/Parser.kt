@@ -46,9 +46,14 @@ class Parser(private val tokens: List<Token>) {
         return ParseError()
     }
 
-    //expression     → equality ;
+    //expression     → comma ;
     private fun expression(): Expr {
-        return equality()
+        return comma()
+    }
+
+    // comma      -> equality ( "," equality)*
+    private fun comma(): Expr {
+        return leftAssociativeBinary({ equality() }, COMMA)
     }
 
     //equality       → comparison ( ( "!=" | "==" ) comparison )* ;
