@@ -87,13 +87,15 @@ class Parser(private val tokens: List<Token>) {
         return expr
     }
 
-    //unary          → ( "!" | "-" ) unary
+    //unary          → ( "!" | "-"  | "+") unary
     //               | primary ;
     private fun unary(): Expr {
         return if (nextMatches(BANG, MINUS)) {
             val operator = previous()
             val right = unary()
             Unary(operator, right)
+        } else if (nextMatches(PLUS, EQUAL_EQUAL, BANG_EQUAL, LESS, LESS_EQUAL, GREATER, GREATER_EQUAL, STAR, SLASH)) {
+            throw error(previous(), "Received binary operator at beginning of expression")
         } else {
             primary()
         }
