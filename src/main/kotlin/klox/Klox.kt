@@ -21,6 +21,8 @@ fun main(args: Array<String>) {
 
 object Klox {
     private var hadError = false
+    private var hadRuntimeError = false
+    private val interpreter = Interpreter()
 
     fun runPrompt() {
         val reader = BufferedReader(InputStreamReader(System.`in`))
@@ -31,23 +33,31 @@ object Klox {
         }
     }
 
+    fun runtimeError(error: RuntimeError) {
+        System.err.println(
+            error.message +
+                    "\n[line " + error.token.line + "]"
+        )
+        hadRuntimeError = true
+    }
 
     fun runFile(path: String) {
         val myPath = ClassLoader.getSystemResource(path).toURI()
         val bytes = Files.readAllBytes(Paths.get(myPath))
         runOn(String(bytes, Charset.defaultCharset()))
         if (hadError) exitProcess(65)
+        if (hadRuntimeError) exitProcess(70)
     }
 
     private fun runOn(source: String) {
         val scanner = Scanner(source)
         val tokens = scanner.scanTokens()
-        println(tokens)
         val parser = Parser(tokens)
         val expression = parser.parse()
-        if (hadError) return
-        println(expression)
-        println(AstPrinter().print(expression!!))
+        // Stop as we had a syntax error
+        if (hadError || expression == null) return
+
+        interpreter.interpret(expression)
     }
 
     private fun report(line: Int, where: String, message: String) {
