@@ -21,4 +21,8 @@ class RpnPrinter : ExprVisitor<String> {
         return if (expr.value == null) "Nil" else expr.value.toString()
     }
 
+    override fun visitTernary(expr: Ternary): String {
+        return "ternary"
+    }
+
 }

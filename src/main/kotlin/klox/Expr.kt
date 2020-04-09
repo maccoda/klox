@@ -28,9 +28,16 @@ data class Literal(val value: Any?) : Expr() {
     }
 }
 
+data class Ternary(val condition: Expr, val left: Expr, val right: Expr) : Expr() {
+    override fun <R> accept(visitor: ExprVisitor<R>): R {
+        return visitor.visitTernary(this)
+    }
+}
+
 interface ExprVisitor<R> {
     fun visitBinary(expr: Binary): R
     fun visitGrouping(expr: Grouping): R
     fun visitUnary(expr: Unary): R
     fun visitLiteral(expr: Literal): R
+    fun visitTernary(expr: Ternary): R
 }

@@ -51,9 +51,24 @@ class Parser(private val tokens: List<Token>) {
         return comma()
     }
 
-    // comma      -> equality ( "," equality)*
+    // comma          -> ternary ("," ternary)*
     private fun comma(): Expr {
-        return leftAssociativeBinary({ equality() }, COMMA)
+        return leftAssociativeBinary({ ternary() }, COMMA)
+    }
+
+    // ternary        -> equality ("?" equality ":" (equality | ternary))*
+    private fun ternary(): Expr {
+        val leftExpression = equality()
+        if (nextMatches(QUESTION_MARK)) {
+            val left = equality()
+            if (nextMatches(COLON)) {
+                val right = ternary()
+                return Ternary(leftExpression, left, right)
+            } else {
+                throw error(peek(), "Expected : to complete ternary operation")
+            }
+        }
+        return leftExpression
     }
 
     //equality       → comparison ( ( "!=" | "==" ) comparison )* ;

@@ -46,7 +46,7 @@ object Klox {
         val parser = Parser(tokens)
         val expression = parser.parse()
         if (hadError) return
-
+        println(expression)
         println(AstPrinter().print(expression!!))
     }
 
